@@ -16,7 +16,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace PullPitcher.Dialogs
 {
@@ -25,6 +24,7 @@ namespace PullPitcher.Dialogs
         private readonly ILogger _logger;
         private readonly IPitcherAppService _pitcherAppService;
         private readonly ICatchersAppService _catchersAppService;
+        // TODO: Move to settings
         private Regex _pullRequestRegex = new Regex(@"https:\/\/dev\.azure\.com\/([^\/]+)\/([^\/]+)\/_git\/([^\/]+)\/pullrequest\/(\d+)");
         private Dictionary<string, WaterfallStep> CommandsHandlerMap;
 
@@ -36,13 +36,6 @@ namespace PullPitcher.Dialogs
             _pitcherAppService = pitcherAppService;
             _catchersAppService = catchersAppService;
 
-            CommandsHandlerMap = new Dictionary<string, WaterfallStep>
-            {
-                { "Pitch", HandlePitchCommandAsync },
-                { "SetCatchers", HandleSetCatchersCommand }
-            };
-
-            AddDialog(new TextPrompt(nameof(TextPrompt)));
             var waterfallSteps = new WaterfallStep[]
             {
                     HandleCommandAsync,
@@ -141,8 +134,17 @@ namespace PullPitcher.Dialogs
 
                 var catcher = _pitcherAppService.PullPitch(Organization, Project, Repo, PullRequestNumber);
 
-                //await stepContext.Context.SendActivityAsync($"Pull {match.Value} Review Assigned To {catcher.Name}");
-                await MentionActivityAsync(stepContext.Context, cancellationToken);
+                var mention = new Mention
+                {
+                    // Mentioned = turnContext.Activity.From,
+                    Mentioned = new ChannelAccount(catcher.Id, catcher.Name),
+                    Text = $"<at>{XmlConvert.EncodeName(catcher.Name)}</at>",
+                };
+
+                var replyActivity = MessageFactory.Text($"Pull {match.Value} Review Assigned To {mention.Text}");
+                replyActivity.Entities = new List<Entity> { mention };
+
+                await stepContext.Context.SendActivityAsync(replyActivity, cancellationToken);
             }
 
 
@@ -151,7 +153,7 @@ namespace PullPitcher.Dialogs
 
         public async Task<DialogTurnResult> HandleListCatchersCommand(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var parts = stepContext.Context.Activity.Text.Split(new[] { '"' });
+            var parts = stepContext.Context.Activity.Text.Split(new[] { '"' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 1)
             {
                 var repoKey = parts[1];
@@ -174,20 +176,6 @@ namespace PullPitcher.Dialogs
             
 
             return await stepContext.EndDialogAsync();
-        }
-        private async Task MentionActivityAsync(ITurnContext turnContext, CancellationToken cancellationToken)
-        {
-            var mention = new Mention
-            {
-                // Mentioned = turnContext.Activity.From,
-                Mentioned = new ChannelAccount("29:1i4Y3bP89bd-YOI5BKjgEGXghF5beXk-WJsqqp1hC0WNomeAvOGCOkc42ks8Mek39IeUCd462VNgDs0TRM-yQnw", "QAIS ALKHATEEB"),
-                Text = $"<at>{XmlConvert.EncodeName(turnContext.Activity.From.Name)}</at>",
-            };
-
-            var replyActivity = MessageFactory.Text($"Pull Test Review Assigned To {mention.Text}");
-            replyActivity.Entities = new List<Entity> { mention };
-
-            await turnContext.SendActivityAsync(replyActivity, cancellationToken);
         }
     }
 }

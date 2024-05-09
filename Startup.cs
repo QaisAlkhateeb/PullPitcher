@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -19,7 +20,13 @@ namespace PullPitcher
 {
     public class Startup
     {
-        // This method gets called by the runtime. Use this method to add services to the container.
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpClient().AddControllers().AddNewtonsoftJson();
@@ -42,8 +49,16 @@ namespace PullPitcher
             // The MainDialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
 
+            // Bind configuration to PitcherSettings
+            var pitcherSettings = new PitcherSettings();
+            Configuration.Bind("PitcherSettings", pitcherSettings);
+
+            services.AddSingleton<PitcherSettings>(pitcherSettings);
+
+            // Register other services
             services.AddSingleton<IPitcherAppService, PitcherAppService>();
             services.AddSingleton<ICatchersAppService, CatchersAppService>();
+            services.AddSingleton<IPullPitchesTracking, PullPitchesTrackingService>();
 
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, DialogAndWelcomeBot<MainDialog>>();
