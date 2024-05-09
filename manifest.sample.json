@@ -1,0 +1,67 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.14/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.14",
+  "version": "1.0.0",
+  "id": "{{BotID}}",
+  "packageName": "com.teams.devnas.pullpithcherbot",
+  "developer": {
+    "name": "QaisAlkateeb",
+    "websiteUrl": "https://www.microsoft.com",
+    "privacyUrl": "https://www.teams.com/privacy",
+    "termsOfUseUrl": "https://www.teams.com/termsofuser"
+  },
+  "icons": {
+    "outline": "icon-outline.png",
+    "color": "icon-color.png"
+  },
+  "name": {
+    "short": "PullPitcherBot",
+    "full": "PullPitcherBot"
+  },
+  "description": {
+    "short": "PullPitcherBot",
+    "full": "PullPitcherBot"
+  },
+  "accentColor": "#FFFFFF",
+  "bots": [
+    {
+      "botId": "{{BotID}}",
+      "scopes": [
+        "personal",
+        "groupchat",
+        "team"
+      ],
+      "isNotificationOnly": false,
+      "supportsCalling": false,
+      "supportsVideo": false,
+      "supportsFiles": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal",
+            "groupchat",
+            "team"
+          ],
+          "commands": [
+            {
+              "title": "NewCatchers",
+              "description": "Update Catchers list from Group Members"
+            },
+            {
+              "title": "Pitch",
+              "description": "Pitch <Pull Request Url> : Assignee new pull request to a Catcher"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "pullpitcherbot.{{yourdomain}}.com",
+    "*.ngrok-free.app"
+  ]
+}
