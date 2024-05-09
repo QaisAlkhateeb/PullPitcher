@@ -1,6 +1,5 @@
 ﻿// Generated with Bot Builder V4 SDK Template for Visual Studio CoreBot v4.22.0
 
-using Microsoft.AspNetCore.Http;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Teams;
@@ -8,7 +7,7 @@ using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using PullPitcher.Contracts.Catchers;
 using PullPitcher.Contracts.Pitchers;
-using PullPitcher.Services.Catchers;
+using PullPitcher.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,17 +23,21 @@ namespace PullPitcher.Dialogs
         private readonly ILogger _logger;
         private readonly IPitcherAppService _pitcherAppService;
         private readonly ICatchersAppService _catchersAppService;
+        private readonly IPullPitchesTracking _pullPitchesTracking;
+
         // TODO: Move to settings
         private Regex _pullRequestRegex = new Regex(@"https:\/\/dev\.azure\.com\/([^\/]+)\/([^\/]+)\/_git\/([^\/]+)\/pullrequest\/(\d+)");
         private Dictionary<string, WaterfallStep> CommandsHandlerMap;
 
         // Dependency injection uses this constructor to instantiate MainDialog
-        public MainDialog(ILogger<MainDialog> logger, IPitcherAppService pitcherAppService, ICatchersAppService catchersAppService)
+        public MainDialog(ILogger<MainDialog> logger, IPitcherAppService pitcherAppService,
+            ICatchersAppService catchersAppService, IPullPitchesTracking pullPitchesTracking)
             : base(nameof(MainDialog))
         {
             _logger = logger;
             _pitcherAppService = pitcherAppService;
             _catchersAppService = catchersAppService;
+            _pullPitchesTracking = pullPitchesTracking;
 
             var waterfallSteps = new WaterfallStep[]
             {
@@ -49,26 +52,46 @@ namespace PullPitcher.Dialogs
 
         private async Task<DialogTurnResult> HandleCommandAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var text = stepContext.Context.Activity.Text.Trim();
-
-            if (text.StartsWith("SetCatchers"))
+            try
             {
-                return await HandleSetCatchersCommand(stepContext, cancellationToken);
-            }
+                stepContext.Context.Activity.Text = stepContext.Context.Activity.Text.Replace("<at>PullPitcherBot</at>", "").Trim();
+                var text = stepContext.Context.Activity.Text.Trim();
 
-            if (text.StartsWith("ListCatchers"))
+                if (text.StartsWith("SetCatchers"))
+                {
+                    return await HandleSetCatchersCommand(stepContext, cancellationToken);
+                }
+
+                if (text.StartsWith("ListCatchers"))
+                {
+                    return await HandleListCatchersCommand(stepContext, cancellationToken);
+                }
+
+                if (text.StartsWith("Pitch"))
+                {
+                    return await HandlePitchCommandAsync(stepContext, cancellationToken);
+                }
+                
+                if (text.StartsWith("History"))
+                {
+                    return await HandleHistoryCommand(stepContext, cancellationToken);
+                }
+
+                if (text.StartsWith("Me"))
+                {
+                    return await HandleMeCommand(stepContext, cancellationToken);
+                }
+
+                await stepContext.Context.SendActivityAsync($"Command Not Found!");
+
+                return await stepContext.EndDialogAsync();
+            }
+            catch (BusinessException ex)
             {
-                return await HandleListCatchersCommand(stepContext, cancellationToken);
+                await stepContext.Context.SendActivityAsync(ex.Message);
+                return await stepContext.EndDialogAsync();
             }
-
-            if (text.StartsWith("Pitch"))
-            {
-                return await HandlePitchCommandAsync(stepContext, cancellationToken);
-            }
-            
-            await stepContext.Context.SendActivityAsync($"Command Not Found!");
-
-            return await stepContext.EndDialogAsync();
+           
         }
 
         private async Task<DialogTurnResult> HandleSetCatchersCommand(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -131,8 +154,8 @@ namespace PullPitcher.Dialogs
                 var Project = match.Groups[2].Value;
                 var Repo = match.Groups[3].Value;
                 var PullRequestNumber = int.Parse(match.Groups[4].Value);
-
-                var catcher = _pitcherAppService.PullPitch(Organization, Project, Repo, PullRequestNumber);
+                var OwnerId = stepContext.Context.Activity.From.Id;
+                var catcher = _pitcherAppService.PullPitch(Organization, Project, Repo, PullRequestNumber, OwnerId);
 
                 var mention = new Mention
                 {
@@ -175,6 +198,25 @@ namespace PullPitcher.Dialogs
             } 
             
 
+            return await stepContext.EndDialogAsync();
+        }
+
+        public async Task<DialogTurnResult> HandleHistoryCommand(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            // TODO Create Command and Options 
+            var parts = stepContext.Context.Activity.Text.Split(new[] { '"' }, StringSplitOptions.RemoveEmptyEntries);
+            int count = parts.Length > 1 ? int.Parse(parts[1]) : int.MaxValue;
+            var history = _pullPitchesTracking.GetHistory(count);
+            string historyMessage = string.Join("\n", history.Select(h => $"Repo: {h.RepoKey}, PR: {h.PullRequestId}, Assigned to: {h.Catcher.Name}"));
+            await stepContext.Context.SendActivityAsync(historyMessage, cancellationToken: cancellationToken);
+            return await stepContext.EndDialogAsync();
+        }
+
+        public async Task<DialogTurnResult> HandleMeCommand(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var assignments = _pullPitchesTracking.GetAssignmentsForCatcher(stepContext.Context.Activity.From.Id);
+            string assignmentsMessage = string.Join("\n", assignments.Select(a => $"Repo: {a.RepoKey}, PR: {a.PullRequestId}"));
+            await stepContext.Context.SendActivityAsync(assignmentsMessage, cancellationToken: cancellationToken);
             return await stepContext.EndDialogAsync();
         }
     }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
+using System;
+using PullPitcher.Exceptions;
 
 namespace PullPitcher.Services.Catchers
 {
@@ -33,18 +35,36 @@ namespace PullPitcher.Services.Catchers
             return new List<Catcher>();
         }
 
-        public Catcher GetNextCatcher(string repoKey)
+        public Catcher GetNextCatcher(string repoKey, string ownerId)
         {
-            if (repoUsers.ContainsKey(repoKey) && repoUsers[repoKey].Count > 0)
+            if (!repoUsers.ContainsKey(repoKey))
             {
-                int currentIndex = repoIndex[repoKey];
-                List<Catcher> users = repoUsers[repoKey];
-                Catcher assignedCatcher = users[currentIndex];
-                // Update the index for the next assignment
-                repoIndex[repoKey] = (currentIndex + 1) % users.Count;
-                return assignedCatcher;
+                throw new BusinessException("Repository not found or no users assigned.");
             }
-            return null;
+
+            List<Catcher> catchers = repoUsers[repoKey];
+            if (catchers.Count <= 1)
+            {
+                throw new BusinessException("Not enough users to assign a different catcher.");
+            }
+
+            int totalCatchers = catchers.Count;
+            int startIndex = repoIndex[repoKey];
+            int attempts = 0;
+
+            while (attempts < totalCatchers)
+            {
+                Catcher catcher = catchers[startIndex];
+                startIndex = (startIndex + 1) % totalCatchers; // move index forward for next time
+                if (catcher.Id != ownerId)
+                {
+                    repoIndex[repoKey] = startIndex; // update the index to the next catcher for future calls
+                    return catcher;
+                }
+                attempts++;
+            }
+
+            throw new BusinessException("No eligible catcher found that is not the owner.");
         }
 
         public void UpdateCatchers(string repoKey, List<Catcher> newCatchers)

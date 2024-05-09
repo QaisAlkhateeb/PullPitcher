@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using PullPitcher.Contracts.Catchers;
 using PullPitcher.Contracts.Pitchers;
+using PullPitcher.Exceptions;
 
 namespace PullPitcher.Services.Pitchers
 {
@@ -18,7 +19,7 @@ namespace PullPitcher.Services.Pitchers
             _pitchTracking = pitchTracking;
         }
 
-        public Catcher PullPitch(string org, string project, string repo, int pullRequestId)
+        public Catcher PullPitch(string org, string project, string repo, int pullRequestId, string ownerId)
         {
             string key = $"{org}/{project}/{repo}";
             Catcher existingCatcher = _pitchTracking.GetAssignedCatcher(key, pullRequestId);
@@ -28,10 +29,10 @@ namespace PullPitcher.Services.Pitchers
                 return existingCatcher;
             }
 
-            Catcher assignedCatcher = _catchersAppService.GetNextCatcher(key);
+            Catcher assignedCatcher = _catchersAppService.GetNextCatcher(key, ownerId);
             if (assignedCatcher == null)
             {
-                throw new Exception("Repository not found or no users assigned.");
+                throw new BusinessException("Repository not found or no users assigned.");
             }
 
             _pitchTracking.TrackAssignment(key, pullRequestId, assignedCatcher);
