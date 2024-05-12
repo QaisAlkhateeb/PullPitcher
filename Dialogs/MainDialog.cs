@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using PullPitcher.Contracts.Catchers;
 using PullPitcher.Contracts.Pitchers;
 using PullPitcher.Exceptions;
+using PullPitcher.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -102,12 +103,14 @@ namespace PullPitcher.Dialogs
                 string repoKey = parts[1].Trim();
                 string catcherEmails = parts.Length > 3 ? parts[3].Trim() : "";
 
-                var members = await TeamsInfo.GetPagedMembersAsync(stepContext.Context);
+                var pagedMembersResult = await TeamsInfo.GetPagedMembersAsync(stepContext.Context, cancellationToken: cancellationToken);
+                var shuffledMembers = pagedMembersResult.Members.Shuffle();
+
                 List<Catcher> newCatchers;
 
                 if (string.IsNullOrEmpty(catcherEmails))
                 {
-                    newCatchers = members.Members.Select(member => new Catcher
+                    newCatchers = shuffledMembers.Select(member => new Catcher
                     {
                         Id = member.Id,
                         Name = member.Name,
@@ -117,7 +120,7 @@ namespace PullPitcher.Dialogs
                 else
                 {
                     var emailList = catcherEmails.Split(',').Select(email => email.Trim()).ToList();
-                    newCatchers = members.Members.Where(member => emailList.Contains(member.Email)).Select(member => new Catcher
+                    newCatchers = shuffledMembers.Where(member => emailList.Contains(member.Email)).Select(member => new Catcher
                     {
                         Id = member.Id,
                         Name = member.Name,
@@ -132,9 +135,8 @@ namespace PullPitcher.Dialogs
             {
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text("Usage: SetCatchers \"repoKey\" \"email1,email2,...\""), cancellationToken);
             }
-            
 
-            return await stepContext.EndDialogAsync();
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
 
         private async Task<DialogTurnResult> HandlePitchCommandAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
