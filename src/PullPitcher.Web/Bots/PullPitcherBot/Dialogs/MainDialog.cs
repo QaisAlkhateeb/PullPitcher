@@ -137,9 +137,8 @@ namespace PullPitcher.Dialogs
             {
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text("Usage: SetCatchers \"repoKey\" \"email1,email2,...\""), cancellationToken);
             }
-            
 
-            return await stepContext.EndDialogAsync();
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
 
         private async Task<DialogTurnResult> HandlePitchCommandAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
