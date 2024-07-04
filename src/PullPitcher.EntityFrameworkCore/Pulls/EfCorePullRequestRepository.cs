@@ -21,7 +21,7 @@ namespace PullPitcher.Pulls
 
         public override async Task<IQueryable<PullRequest>> WithDetailsAsync()
         {
-            return (await GetQueryableAsync()).Include(x => x.Reviewers).ThenInclude(e => e.Catcher);
+            return (await GetQueryableAsync()).Include(x => x.Reviewers).ThenInclude(e => e.Catcher).ThenInclude(c => c.Channel);
         }
     }
 }

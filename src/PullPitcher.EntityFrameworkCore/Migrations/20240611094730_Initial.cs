@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PullPitcher.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -392,18 +392,19 @@ namespace PullPitcher.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AppCatchers",
+                name: "AppChannels",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ExternalId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Repository = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ChannelId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ServiceUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BotId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AppCatchers", x => x.Id);
+                    table.PrimaryKey("PK_AppChannels", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -412,7 +413,8 @@ namespace PullPitcher.Migrations
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Index = table.Column<int>(type: "int", nullable: false),
-                    Repository = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -427,7 +429,9 @@ namespace PullPitcher.Migrations
                     OwnerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Repository = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Link = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Number = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Number = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -744,25 +748,25 @@ namespace PullPitcher.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AppPullReviewers",
+                name: "AppCatchers",
                 columns: table => new
                 {
-                    PullRequestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CatcherId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ExternalId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Repository = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ChannelId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AppPullReviewers", x => new { x.PullRequestId, x.CatcherId });
+                    table.PrimaryKey("PK_AppCatchers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AppPullReviewers_AppCatchers_CatcherId",
-                        column: x => x.CatcherId,
-                        principalTable: "AppCatchers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AppPullReviewers_AppPullRequests_PullRequestId",
-                        column: x => x.PullRequestId,
-                        principalTable: "AppPullRequests",
+                        name: "FK_AppCatchers_AppChannels_ChannelId",
+                        column: x => x.ChannelId,
+                        principalTable: "AppChannels",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -818,6 +822,32 @@ namespace PullPitcher.Migrations
                         name: "FK_AbpEntityPropertyChanges_AbpEntityChanges_EntityChangeId",
                         column: x => x.EntityChangeId,
                         principalTable: "AbpEntityChanges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AppPullReviewers",
+                columns: table => new
+                {
+                    PullRequestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CatcherId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppPullReviewers", x => new { x.PullRequestId, x.CatcherId });
+                    table.ForeignKey(
+                        name: "FK_AppPullReviewers_AppCatchers_CatcherId",
+                        column: x => x.CatcherId,
+                        principalTable: "AppCatchers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AppPullReviewers_AppPullRequests_PullRequestId",
+                        column: x => x.PullRequestId,
+                        principalTable: "AppPullRequests",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1067,6 +1097,11 @@ namespace PullPitcher.Migrations
                 column: "UserName");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AppCatchers_ChannelId",
+                table: "AppCatchers",
+                column: "ChannelId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AppPullReviewers_CatcherId",
                 table: "AppPullReviewers",
                 column: "CatcherId");
@@ -1215,6 +1250,9 @@ namespace PullPitcher.Migrations
 
             migrationBuilder.DropTable(
                 name: "AbpAuditLogs");
+
+            migrationBuilder.DropTable(
+                name: "AppChannels");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictApplications");

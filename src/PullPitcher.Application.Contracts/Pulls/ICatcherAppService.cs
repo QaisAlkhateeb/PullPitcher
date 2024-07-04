@@ -6,7 +6,7 @@ namespace PullPitcher.Pulls
 {
     public interface ICatcherAppService : ITransientDependency
     {
-        Task SetCatchers(string repositoryKey, List<SetCatcherDto> catcherDtos);
+        Task SetCatchers(string botId, string conversationId, string repositoryKey, List<SetCatcherDto> catcherDtos);
         Task<List<CatcherListItemDto>> ListCatchers(string repositoryKey);
     }
 }

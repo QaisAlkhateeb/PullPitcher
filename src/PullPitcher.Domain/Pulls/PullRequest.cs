@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Volo.Abp;
-using Volo.Abp.Domain.Entities;
+using Volo.Abp.Domain.Entities.Auditing;
 
 namespace PullPitcher.Pulls
 {
-    public class PullRequest : Entity<Guid>
+    public class PullRequest : CreationAuditedEntity<Guid>
     {
         public string OwnerId { get; protected set; }
         public string Repository { get; protected set; }

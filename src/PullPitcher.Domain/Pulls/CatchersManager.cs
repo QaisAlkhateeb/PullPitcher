@@ -11,20 +11,32 @@ namespace PullPitcher.Pulls
     {
         private readonly IRepository<Catcher, Guid> _catcherRepository;
         private readonly IRepository<PitchIndex, string> _pitchIndexRepository;
+        private readonly IRepository<Channel, string> _channelsRepository;
 
-        public CatchersManager(IRepository<Catcher, Guid> catcherRepository, IRepository<PitchIndex, string> pitchIndexRepository)
+        public CatchersManager(IRepository<Catcher, Guid> catcherRepository,
+            IRepository<PitchIndex, string> pitchIndexRepository,
+            IRepository<Channel, string> channelsRepository)
         {
             _catcherRepository = catcherRepository;
             _pitchIndexRepository = pitchIndexRepository;
+            _channelsRepository = channelsRepository;
         }
-        public async Task SetCatchers(string repoKey, List<CatcherDetails> newCatchers)
+        public async Task SetCatchers(string botId, string conversationId, string repoKey, List<CatcherDetails> newCatchers)
         {
+            // Create Channel If not exists 
+            var channel = await _channelsRepository.FindAsync(c => c.BotId == botId && c.Id == conversationId);
+            if (channel == null)
+            {
+                channel = new Channel(conversationId, botId);
+                await _channelsRepository.InsertAsync(channel, true);
+            }
+
             // Remove existing catchers
             await _catcherRepository.DeleteAsync(c => c.Repository == repoKey, true);
 
             // Add new catchers
             var mapCatchers = newCatchers
-                .Select(c => new Catcher(GuidGenerator.Create(), repoKey, c.Name, c.Email, c.ExternalId))
+                .Select(c => new Catcher(GuidGenerator.Create(), channel.Id, repoKey, c.Name, c.Email, c.ExternalId))
                 .OrderBy(x => Guid.NewGuid()); //shuffle
 
             await _catcherRepository.InsertManyAsync(mapCatchers);

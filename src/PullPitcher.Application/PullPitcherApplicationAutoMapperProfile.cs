@@ -17,5 +17,6 @@ public class PullPitcherApplicationAutoMapperProfile : Profile
         CreateMap<PullRequest, PullRequestDto>();
         CreateMap<PullReviewer, PullReviewerDto>();
         CreateMap<Catcher, CatcherDto>();
+        CreateMap<Channel, ChannelDto>();
     }
 }

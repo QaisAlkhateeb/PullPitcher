@@ -22,10 +22,10 @@ namespace PullPitcher.Pulls
             return catchersMapped;
         }
 
-        public async Task SetCatchers(string repositoryKey, List<SetCatcherDto> catcherDtos)
+        public async Task SetCatchers(string botId, string conversationId, string repositoryKey, List<SetCatcherDto> catcherDtos)
         {
             var mapped = ObjectMapper.Map<List<SetCatcherDto>, List<CatcherDetails>>(catcherDtos);
-            await _catchersManager.SetCatchers(repositoryKey, mapped);
+            await _catchersManager.SetCatchers(botId, conversationId, repositoryKey, mapped);
         }
     }
 }

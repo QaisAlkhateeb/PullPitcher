@@ -1,10 +1,11 @@
 ﻿using System;
 using Volo.Abp;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.Domain.Entities.Auditing;
 
 namespace PullPitcher.Pulls
 {
-    public class PullReviewer : Entity
+    public class PullReviewer : CreationAuditedEntity
     {
         public virtual PullRequest PullRequest { get; protected set; }
         public Guid PullRequestId { get; protected set; }

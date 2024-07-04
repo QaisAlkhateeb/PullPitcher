@@ -60,6 +60,7 @@ public class PullPitcherDbContext :
     public DbSet<PullRequest> PullRequests { get; set; }
     public DbSet<PullReviewer> pullReviewers { get; set; }
     public DbSet<PitchIndex> PitchIndices { get; set; }
+    public DbSet<Channel> Channels { get; set; }
     public PullPitcherDbContext(DbContextOptions<PullPitcherDbContext> options)
         : base(options)
     {
@@ -105,6 +106,12 @@ public class PullPitcherDbContext :
         builder.Entity<Catcher>(b =>
         {
             b.ToTable(PullPitcherConsts.DbTablePrefix + "Catchers", PullPitcherConsts.DbSchema);
+            b.ConfigureByConvention(); //auto configure for the base class props
+        });
+
+        builder.Entity<Channel>(b =>
+        {
+            b.ToTable(PullPitcherConsts.DbTablePrefix + "Channels", PullPitcherConsts.DbSchema);
             b.ConfigureByConvention(); //auto configure for the base class props
         });
 

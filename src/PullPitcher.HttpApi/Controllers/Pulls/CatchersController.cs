@@ -19,10 +19,10 @@ namespace PullPitcher.Controllers.Pulls
             _catchersAppService = catcherAppService;
         }
 
-        [HttpPost("{repositoryKey}")]
-        public async Task SetCatchers(string repositoryKey, List<SetCatcherDto> setCatcherDtos)
+        [HttpPost]
+        public async Task SetCatchers(string repositoryKey, string botId, string conversationId, List<SetCatcherDto> setCatcherDtos)
         {
-            await _catchersAppService.SetCatchers(repositoryKey, setCatcherDtos);
+            await _catchersAppService.SetCatchers(botId, conversationId, repositoryKey, setCatcherDtos);
         }
 
         [HttpGet("{repositoryKey}")]

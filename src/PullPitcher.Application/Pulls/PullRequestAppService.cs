@@ -40,5 +40,14 @@ namespace PullPitcher.Pulls
             var requests = query.Where(p => p.Reviewers.Any(r => r.Catcher.ExternalId == ownerId)).ToList();
             return ObjectMapper.Map<List<PullRequest>, List<PullRequestDto>>(requests);
         }
+
+        public async Task<List<PullRequestDto>> Waititng(int minutes = 240)
+        {
+            // TODO Move to shared query
+            var query = (await _pullRequestsRepository.WithDetailsAsync());
+            var threshold = DateTime.Now.AddMinutes(minutes * -1);
+            var requests = query.Where(p => threshold >= p.CreationTime).ToList();
+            return ObjectMapper.Map<List<PullRequest>, List<PullRequestDto>>(requests);
+        }
     }
 }

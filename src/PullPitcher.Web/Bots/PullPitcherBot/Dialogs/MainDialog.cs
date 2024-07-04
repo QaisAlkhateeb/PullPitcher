@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using System.Xml;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
-using static System.Collections.Specialized.BitVector32;
 
 namespace PullPitcher.Dialogs
 {
@@ -78,6 +77,11 @@ namespace PullPitcher.Dialogs
                     return await HandleHistoryCommand(stepContext, cancellationToken);
                 }
 
+                if (text.StartsWith("Reminder"))
+                {
+                    return await HandleReminderCommand(stepContext, cancellationToken);
+                }
+
                 if (text.StartsWith("Me"))
                 {
                     return await HandleMeCommand(stepContext, cancellationToken);
@@ -130,7 +134,7 @@ namespace PullPitcher.Dialogs
                     }).ToList();
                 }
 
-                await _catchersAppService.SetCatchers(repoKey, newCatchers);
+                await _catchersAppService.SetCatchers(stepContext.Context.Activity.Recipient.Id, stepContext.Context.Activity.Conversation.Id, repoKey, newCatchers);
                 await stepContext.Context.SendActivityAsync(MessageFactory.Text("Catchers set successfully for " + repoKey), cancellationToken);
             }
             else
@@ -235,6 +239,25 @@ namespace PullPitcher.Dialogs
                 await stepContext.Context.SendActivityAsync(historyMessage, cancellationToken: cancellationToken);
             }
         
+            return await stepContext.EndDialogAsync();
+        }
+
+        public async Task<DialogTurnResult> HandleReminderCommand(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            // TODO Create Command and Options 
+            var parts = stepContext.Context.Activity.Text.Split(new[] { '"' }, StringSplitOptions.RemoveEmptyEntries);
+            int minutes = parts.Length > 1 ? int.Parse(parts[1]) : int.MaxValue;
+            var history = await _pullPitchesTracking.Waititng(minutes);
+            if (history.IsNullOrEmpty())
+            {
+                await stepContext.Context.SendActivityAsync("No Pull Requests Assigned");
+            }
+            else
+            {
+                string historyMessage = string.Join("<br>", history.Select(h => $"<br>Repo: {h.Repository}, <br>PR: {h.Link}, <br>Assigned to: {h.Reviewers.First().Catcher.Name}"));
+                await stepContext.Context.SendActivityAsync(historyMessage, cancellationToken: cancellationToken);
+            }
+
             return await stepContext.EndDialogAsync();
         }
 

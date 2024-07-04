@@ -19,5 +19,6 @@ namespace PullPitcher.Pulls
         /// <returns></returns>
         Task<List<PullRequestDto>> To(string ownerId);
         Task<List<PullRequestDto>> History(int pageSize);
+        Task<List<PullRequestDto>> Waititng(int minutes = 240);
     }
 }

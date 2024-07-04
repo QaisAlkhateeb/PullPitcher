@@ -40,6 +40,8 @@ The PullPitcher Bot is designed to facilitate the review process of pull request
 ## Development Note
 Please note that this bot is still in development. Features and commands are subject to change. Feedback and contributions are welcome to improve functionality and user experience.
 
+*bot setup tutorial:* https://learn.microsoft.com/en-us/microsoftteams/platform/sbs-teams-conversation-bot?tabs=dev
+
 ## Icons Linces
 
 [Gitlab icons created by Grey Zundapp - Flaticon](https://www.flaticon.com/free-icons/gitlab)
